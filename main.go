@@ -24,6 +24,7 @@ type Project struct {
 }
 
 var (
+	DEBUG       = true
 	baseDir     = "./Projects"
 	indexFile   = filepath.Join(baseDir, "_index.yaml")
 	defaultDirs = []string{"Design/Drawings", "Design/Specs", "PLC/Programs", "PLC/HMI", "PLC/Symbols", "PLC/Configs", "BOM/exports", "Docs/Notes", "Tests/Simulations", "Tests/Logs", "Tags", "Tools", "Archive"}
@@ -37,6 +38,12 @@ func main() {
 	status := flag.String("status", "active", "Project status")
 	tags := flag.String("tags", "", "Comma-separated tags")
 	flag.Parse()
+
+	if DEBUG {
+		fmt.Printf("Base Directory: %v\n", baseDir)
+		fmt.Printf("Index: %v\n", indexFile)
+		fmt.Printf("Default Directories: \n%v\n", defaultDirs)
+	}
 
 	switch *cmd {
 	case "new":
@@ -58,3 +65,12 @@ func main() {
 }
 
 // Additional functions (createProject, listProjects, openProject, etc.) to be implemented below.
+func createProject(id string, name string, description string, status string, tags []string) {}
+
+func listProjects() {}
+
+func openProject(id string) {}
+
+func showStatus(id string) {}
+
+func archiveProject(id string) {}
