@@ -9,8 +9,12 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
 	"strings"
+	"time"
+
+	"gopkg.in/yaml.v3"
 )
 
 type Project struct {
@@ -42,7 +46,7 @@ func main() {
 	if DEBUG {
 		fmt.Printf("Base Directory: %v\n", baseDir)
 		fmt.Printf("Index: %v\n", indexFile)
-		fmt.Printf("Default Directories: \n%v\n", defaultDirs)
+		fmt.Printf("Default Directories: \n%v\n\n", defaultDirs)
 	}
 
 	switch *cmd {
@@ -65,11 +69,81 @@ func main() {
 }
 
 // Additional functions (createProject, listProjects, openProject, etc.) to be implemented below.
-func createProject(id string, name string, description string, status string, tags []string) {}
+func createProject(id string, name string, description string, status string, tags []string) {
+	id = strings.ToUpper(id)
+	projectPath := filepath.Join(baseDir, id)
+	if _, err := os.Stat(projectPath); !os.IsNotExist(err) {
+		log.Fatalf("Project %s already exists", id)
+	}
 
-func listProjects() {}
+	if err := os.MkdirAll(projectPath, 0755); err != nil {
+		log.Fatalf("Failed to create project directory: %v", err)
+	}
 
-func openProject(id string) {}
+	for _, sub := range defaultDirs {
+		subPath := filepath.Join(projectPath, sub)
+		if err := os.MkdirAll(subPath, 0755); err != nil {
+			log.Fatalf("Failed to create subdirectory %s: %v", sub, err)
+		}
+	}
+
+	p := Project{
+		ID:          id,
+		Name:        name,
+		Status:      status,
+		Tags:        tags,
+		CreatedAt:   time.Now().Format(time.RFC3339),
+		Description: description,
+		Path:        projectPath,
+	}
+
+	projData, err := yaml.Marshal(&p)
+	if err != nil {
+		log.Fatalf("Failed to marshal project YAML: %v", err)
+	}
+
+	projFile := filepath.Join(projectPath, "project.yaml")
+	if err := os.WriteFile(projFile, projData, 0644); err != nil {
+		log.Fatalf("Failed to write project.yaml: %v", err)
+	}
+
+	fmt.Printf("✅ Created project %s at %s\n", id, projectPath)
+}
+
+func listProjects() {
+	entries, err := os.ReadDir(baseDir)
+	if err != nil {
+		log.Fatalf("Failed to read base directory: %v", err)
+	}
+
+	fmt.Printf("%-12s %-25s %-10s %-20s", "ID", "Name", "Status", "Created")
+	fmt.Println(strings.Repeat("-", 70))
+
+	for _, entry := range entries {
+		if !entry.IsDir() || entry.Name() == "Archive" || strings.HasPrefix(entry.Name(), ".") {
+			continue
+		}
+
+		projPath := filepath.Join(baseDir, entry.Name(), "project.yaml")
+		data, err := os.ReadFile(projPath)
+		if err != nil {
+			log.Printf("Warning: skipping %s (no project.yaml found)", entry.Name())
+			continue
+		}
+
+		var p Project
+		if err := yaml.Unmarshal(data, &p); err != nil {
+			log.Printf("Warning: failed to parse %s: %v", projPath, err)
+			continue
+		}
+
+		fmt.Printf("%-12s %-25s %-10s %-20s", p.ID, p.Name, p.Status, p.CreatedAt)
+	}
+}
+
+func openProject(id string) {
+
+}
 
 func showStatus(id string) {}
 
