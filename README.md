@@ -11,7 +11,7 @@ Created by Daniel Thornburg to provide a fast, scriptable, structured way to cre
 - YAML-based metadata for each project
 - CLI access to create, update, list, open, view, and archive projects
 - Fully cross-platform (Linux, Windows, macOS)
-- No external dependencies — just Go's standard library
+- No external dependencies — built with the intent of having no extra runtime dependencies
 
 ---
 
