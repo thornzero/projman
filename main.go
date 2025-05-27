@@ -6,8 +6,10 @@
 package main
 
 import (
+	"archive/zip"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -34,26 +36,57 @@ var (
 	DEBUG       = true
 	baseDir     = ""
 	indexFile   = ""
-	defaultDirs = []string{"Design/Drawings", "Design/Specs", "PLC/Programs", "PLC/HMI", "PLC/Symbols", "PLC/Configs", "BOM/exports", "Docs/Notes", "Tests/Simulations", "Tests/Logs", "Tags", "Tools", "Archive"}
+	archiveDir  = ""
+	defaultDirs = []string{
+		"Design/Drawings",
+		"Design/Specs",
+		"PLC/Programs",
+		"PLC/HMI",
+		"PLC/Symbols",
+		"PLC/Configs",
+		"BOM/exports",
+		"Docs/Notes",
+		"Tests/Simulations",
+		"Tests/Logs",
+		"Tags",
+		"Tools",
+		"Archive",
+	}
 )
 
 func init() {
 	userHome, err := os.UserHomeDir()
-	if err != nil {
-		log.Fatalf("Unable to determine home directory: %v", err)
-	}
+	errorLog("Unable to determine home directory: %v", err)
 	baseDir = filepath.Join(userHome, "Projects")
+	archiveDir = filepath.Join(baseDir, "Archive")
+	err = os.MkdirAll(archiveDir, 0755)
+	errorLog("Failed to create archive directory", err)
 	indexFile = filepath.Join(baseDir, "_index.yaml")
 }
 
 func main() {
-	cmd := flag.String("cmd", "", "Command: new, list, open, status, archive")
+	flag.Usage = func() {
+		fmt.Println("Usage: projman <command> [options]")
+		fmt.Println("Commands: new, list, open, status, update, archive")
+		fmt.Println("Options:")
+		flag.PrintDefaults()
+	}
+
 	id := flag.String("id", "", "Project ID (e.g. CP-1201)")
 	name := flag.String("name", "", "Project name")
 	desc := flag.String("desc", "", "Project description")
 	status := flag.String("status", "active", "Project status")
 	tags := flag.String("tags", "", "Comma-separated tags")
+
 	flag.Parse()
+
+	args := flag.Args()
+	if len(args) < 1 {
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	cmd := args[0]
 
 	if DEBUG {
 		fmt.Printf("Base Directory: %v\n", baseDir)
@@ -61,12 +94,17 @@ func main() {
 		fmt.Printf("Default Directories: \n%v\n\n", defaultDirs)
 	}
 
-	switch *cmd {
+	switch cmd {
 	case "new":
 		if *id == "" || *name == "" {
 			log.Fatal("Must provide -id and -name for new project")
 		}
 		createProject(Params{*id, *name, *desc, *status, *tags})
+	case "update":
+		if *id == "" {
+			log.Fatal("Must provide -id to identify the project you wish to update")
+		}
+		updateProject(Params{*id, *name, *desc, *status, *tags})
 	case "list":
 		listProjects()
 	case "open":
@@ -76,7 +114,23 @@ func main() {
 	case "archive":
 		archiveProject(*id)
 	default:
-		fmt.Println("Unknown command. Use -cmd=new|list|open|status|archive")
+		fmt.Printf("Unknown command: %s\n", cmd)
+		flag.Usage()
+		os.Exit(1)
+	}
+}
+
+func warningLog(context string, err error) bool {
+	if err != nil {
+		log.Printf("⚠️  Warning in %s: %v\n", context, err)
+		return true // signal caller to continue
+	}
+	return false
+}
+
+func errorLog(message string, err error) {
+	if err != nil {
+		log.Fatalf(message+": %s", err)
 	}
 }
 
@@ -107,25 +161,50 @@ type Params struct {
 	id, name, description, status, tags string
 }
 
+func readProjectFile(id string) Project {
+	projectPath := filepath.Join(baseDir, id)
+	projectFile := filepath.Join(projectPath, "project.yaml")
+	if _, err := os.Stat(projectPath); os.IsNotExist(err) {
+		log.Fatalf("Project %s does not exist", id)
+	}
+
+	data, err := os.ReadFile(projectFile)
+	errorLog("Failed to read project.yaml", err)
+
+	var project Project
+	err = yaml.Unmarshal(data, &project)
+	errorLog("Failed to parse project.yaml", err)
+	return project
+}
+
+func writeProjectFile(project Project) {
+	data, err := yaml.Marshal(&project)
+	errorLog("Failed to marshal project YAML", err)
+
+	file := filepath.Join(project.Path, "project.yaml")
+	err = os.WriteFile(file, data, 0644)
+	errorLog("Failed to write project.yaml", err)
+}
+
 func createProject(p Params) {
 	id := validateId(p.id)
 	projectPath := filepath.Join(baseDir, id)
-	if _, err := os.Stat(projectPath); !os.IsNotExist(err) {
+
+	_, err := os.Stat(projectPath)
+	if !os.IsNotExist(err) {
 		log.Fatalf("Project %s already exists", id)
 	}
 
-	if err := os.MkdirAll(projectPath, 0755); err != nil {
-		log.Fatalf("Failed to create project directory: %v", err)
-	}
+	err = os.MkdirAll(projectPath, 0755)
+	errorLog("Failed to create project directory", err)
 
 	for _, sub := range defaultDirs {
 		subPath := filepath.Join(projectPath, sub)
-		if err := os.MkdirAll(subPath, 0755); err != nil {
-			log.Fatalf("Failed to create subdirectory %s: %v", sub, err)
-		}
+		err := os.MkdirAll(subPath, 0755)
+		errorLog("Failed to create subdirectory "+sub, err)
 	}
 
-	project := Project{
+	writeProjectFile(Project{
 		ID:          id,
 		Name:        p.name,
 		Status:      p.status,
@@ -133,35 +212,14 @@ func createProject(p Params) {
 		CreatedAt:   timestamp(),
 		Description: p.description,
 		Path:        projectPath,
-	}
-
-	projData, err := yaml.Marshal(&project)
-	if err != nil {
-		log.Fatalf("Failed to marshal project YAML: %v", err)
-	}
-
-	projFile := filepath.Join(projectPath, "project.yaml")
-	if err := os.WriteFile(projFile, projData, 0644); err != nil {
-		log.Fatalf("Failed to write project.yaml: %v", err)
-	}
+	})
 
 	fmt.Printf("✅ Created project %s at %s\n", id, projectPath)
 }
 
 func updateProject(p Params) {
 	id := validateId(p.id)
-	projectPath := filepath.Join(baseDir, id)
-	projFile := filepath.Join(projectPath, "project.yaml")
-
-	data, err := os.ReadFile(projFile)
-	if err != nil {
-		log.Fatalf("Failed to read project.yaml: %v", err)
-	}
-
-	var project Project
-	if err := yaml.Unmarshal(data, &project); err != nil {
-		log.Fatalf("Failed to parse project.yaml: %v", err)
-	}
+	project := readProjectFile(id)
 
 	// Update fields if provided
 	if p.name != "" {
@@ -176,24 +234,14 @@ func updateProject(p Params) {
 	if p.tags != "" {
 		project.Tags = cleanTags(p.tags)
 	}
-
-	updatedData, err := yaml.Marshal(&project)
-	if err != nil {
-		log.Fatalf("Failed to marshal updated project.yaml: %v", err)
-	}
-
-	if err := os.WriteFile(projFile, updatedData, 0644); err != nil {
-		log.Fatalf("Failed to write updated project.yaml: %v", err)
-	}
+	writeProjectFile(project)
 
 	fmt.Printf("✅ Updated project %s\n", id)
 }
 
 func listProjects() {
 	entries, err := os.ReadDir(baseDir)
-	if err != nil {
-		log.Fatalf("Failed to read base directory: %v", err)
-	}
+	errorLog("Failed to read base directory: %v", err)
 
 	fmt.Printf("%-12s %-25s %-10s %-20s\n", "ID", "Name", "Status", "Created")
 	fmt.Println(strings.Repeat("-", 70))
@@ -205,14 +253,12 @@ func listProjects() {
 
 		projPath := filepath.Join(baseDir, entry.Name(), "project.yaml")
 		data, err := os.ReadFile(projPath)
-		if err != nil {
-			log.Printf("Warning: skipping %s (no project.yaml found)\n", entry.Name())
+		if warningLog(entry.Name(), err) {
 			continue
 		}
 
 		var p Project
-		if err := yaml.Unmarshal(data, &p); err != nil {
-			log.Printf("Warning: failed to parse %s: %v\n", projPath, err)
+		if warningLog(projPath, yaml.Unmarshal(data, &p)) {
 			continue
 		}
 
@@ -225,7 +271,7 @@ func listProjects() {
 }
 
 func openProject(id string) {
-	id = strings.ToUpper(id)
+	id = validateId(id)
 	projectPath := filepath.Join(baseDir, id)
 	if _, err := os.Stat(projectPath); os.IsNotExist(err) {
 		log.Fatalf("Project %s not found", id)
@@ -242,35 +288,78 @@ func openProject(id string) {
 	}
 
 	cmd := exec.Command(openCmd, projectPath)
-	if err := cmd.Start(); err != nil {
-		log.Fatalf("Failed to open project folder: %v", err)
-	}
+	err := cmd.Start()
+	errorLog("Failed to open project folder: %v", err)
 }
 
 func showStatus(id string) {
 	id = validateId(id)
-	projectPath := filepath.Join(baseDir, id, "project.yaml")
+	project := readProjectFile(id)
 
-	data, err := os.ReadFile(projectPath)
-	if err != nil {
-		log.Fatalf("Failed to read project.yaml: %v", err)
-	}
-
-	var project Project
-	if err := yaml.Unmarshal(data, &project); err != nil {
-		log.Fatalf("Failed to parse project.yaml: %v", err)
-	}
-
-	fmt.Println("📄 Project Status")
+	fmt.Println("󱖫 Project Status")
 	fmt.Println(strings.Repeat("=", 50))
-	fmt.Printf("ID:          %s", project.ID)
-	fmt.Printf("Name:        %s", project.Name)
-	fmt.Printf("Description: %s", project.Description)
-	fmt.Printf("Status:      %s", project.Status)
-	fmt.Printf("Created At:  %s", project.CreatedAt)
-	fmt.Printf("Tags:        %s", strings.Join(project.Tags, ", "))
-	fmt.Printf("Path:        %s", project.Path)
+	fmt.Printf("ID:          %s\n", project.ID)
+	fmt.Printf("Name:        %s\n", project.Name)
+	fmt.Printf("Description: %s\n", project.Description)
+	fmt.Printf("Status:      %s\n", project.Status)
+	fmt.Printf("Created At:  %s\n", project.CreatedAt)
+	fmt.Printf("Tags:        %s\n", strings.Join(project.Tags, ", "))
+	fmt.Printf("Path:        %s\n", project.Path)
 	fmt.Println(strings.Repeat("=", 50))
 }
 
-func archiveProject(id string) {}
+func archiveProject(id string) {
+	id = validateId(id)
+	project := readProjectFile(id)
+
+	archivePath := filepath.Join(archiveDir, id+".zip")
+	zipFile, err := os.Create(archivePath)
+	errorLog("Failed to create archive file", err)
+	defer zipFile.Close()
+
+	zipWriter := zip.NewWriter(zipFile)
+	defer zipWriter.Close()
+
+	err = filepath.Walk(project.Path, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+
+		relPath, err := filepath.Rel(project.Path, path)
+		if err != nil {
+			return err
+		}
+		file, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		fWriter, err := zipWriter.Create(relPath)
+		if err != nil {
+			return err
+		}
+
+		_, err = io.Copy(fWriter, file)
+		return err
+	})
+	errorLog("Failed to archive project: %v", err)
+
+	project.Status = "archived"
+
+	writeProjectFile(project)
+	fmt.Printf("📦 Archived project %s to %s\n", id, archivePath)
+
+	getArchiveSize(id)
+}
+
+func getArchiveSize(id string) {
+	archivePath := filepath.Join(archiveDir, id+".zip")
+	info, err := os.Stat(archivePath)
+	if err == nil {
+		fmt.Printf("📦 Archive size: %.2f KB\n", float64(info.Size())/1024)
+	}
+}

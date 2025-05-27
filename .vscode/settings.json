@@ -1,4 +1,4 @@
 {
-    "editor.fontFamily": "'JetBrainsMono Nerd Font', 'monospace', monospace",
+    "editor.fontFamily": "'Noto Color Emoji', 'JetBrainsMono Nerd Font', 'monospace', monospace",
     "terminal.integrated.fontLigatures.enabled": true
 }
