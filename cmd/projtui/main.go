@@ -15,15 +15,17 @@ const (
 	optionCreateProject
 	optionViewProject
 	optionArchiveProject
+	optionTools
 	optionSettings
 	optionQuit
 )
 
 var menuItems = []string{
-	"📋 List Projects",
+	"📋 Projects",
 	"🆕 Create New Project",
 	"🔍 View Project Status",
 	"📦 Archive Project",
+	"🧰 Tools",
 	"⚙️ Settings",
 	"❌ Quit",
 }
@@ -63,6 +65,9 @@ func (m mainMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			case optionViewProject:
 				return newViewProjectModel(), nil
+
+			case optionTools:
+				return newToolsModel(), nil
 
 			case optionSettings:
 				return newSettingsModel(), nil
