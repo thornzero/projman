@@ -1,4 +1,4 @@
-package main
+package tui
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/thornzero/projman/pkg/projman"
+	"github.com/thornzero/projman/core"
 )
 
 type createProjectModel struct {
@@ -19,7 +19,7 @@ type createProjectModel struct {
 }
 
 func newCreateProjectModel() createProjectModel {
-	base := projman.GetDefaultBaseDir()
+	base := core.GetDefaultBaseDir()
 	fields := []string{"Project ID", "Project Name", "Description", "Tags (comma-separated)"}
 	inputs := make([]textinput.Model, len(fields))
 	for i := range inputs {
@@ -53,7 +53,7 @@ func (m createProjectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return mainMenuModel{}, nil
 		case "enter":
 			if m.focus == len(m.inputs)-1 {
-				id := projman.ValidateID(m.inputs[0].Value())
+				id := core.ValidateID(m.inputs[0].Value())
 				name := m.inputs[1].Value()
 				desc := m.inputs[2].Value()
 				tags := m.inputs[3].Value()
@@ -63,7 +63,7 @@ func (m createProjectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 
-				projman.CreateProject(m.baseDir, projman.Params{
+				core.CreateProject(m.baseDir, core.Params{
 					ID:          id,
 					Name:        name,
 					Description: desc,

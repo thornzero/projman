@@ -1,4 +1,4 @@
-package main
+package tui
 
 import (
 	"fmt"
@@ -7,13 +7,13 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/thornzero/projman/pkg/projman"
+	"github.com/thornzero/projman/core"
 )
 
 type viewProjectModel struct {
 	input   textinput.Model
 	baseDir string
-	project *projman.Project
+	project *core.Project
 	errMsg  string
 	done    bool
 }
@@ -27,7 +27,7 @@ func newViewProjectModel() viewProjectModel {
 
 	return viewProjectModel{
 		input:   ti,
-		baseDir: projman.GetDefaultBaseDir(),
+		baseDir: core.GetDefaultBaseDir(),
 	}
 }
 
@@ -42,13 +42,13 @@ func (m viewProjectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "esc":
 			return mainMenuModel{}, nil
 		case "enter":
-			id := projman.ValidateID(m.input.Value())
+			id := core.ValidateID(m.input.Value())
 			if id == "" {
 				m.errMsg = "❌ Invalid ID"
 				return m, nil
 			}
 
-			p, err := projman.ReadProjectFile(m.baseDir, id)
+			p, err := core.ReadProjectFile(m.baseDir, id)
 			if err != nil {
 				m.errMsg = fmt.Sprintf("❌ %v", err)
 				return m, nil

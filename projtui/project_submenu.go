@@ -1,4 +1,4 @@
-package main
+package tui
 
 import (
 	"fmt"
@@ -8,11 +8,11 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/thornzero/projman/pkg/projman"
+	"github.com/thornzero/projman/core"
 )
 
 type projectSubmenuModel struct {
-	project projman.Project
+	project core.Project
 	choice  int
 }
 
@@ -23,7 +23,7 @@ var submenuItems = []string{
 	"Back",
 }
 
-func newProjectSubmenuModel(p projman.Project) projectSubmenuModel {
+func newProjectSubmenuModel(p core.Project) projectSubmenuModel {
 	return projectSubmenuModel{project: p}
 }
 
@@ -36,25 +36,25 @@ func (m projectSubmenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "up", "k":
-            PlaySound(Sounds.NavUpSound)
+			PlaySound(Sounds.NavUpSound)
 			if m.choice > 0 {
 				m.choice--
 			}
 		case "down", "j":
-            PlaySound(Sounds.NavDownSound)
+			PlaySound(Sounds.NavDownSound)
 			if m.choice < len(submenuItems)-1 {
 				m.choice++
 			}
 		case "enter":
-            PlaySound(Sounds.SelectSound)
+			PlaySound(Sounds.SelectSound)
 			switch m.choice {
 			case 0: // View Status
 				return viewProjectModel{project: &m.project, done: true}, nil
 			case 1: // Archive
-				_ = projman.ZipProjectFolder(m.project.Path, m.project.Path+".zip")
+				_ = core.ZipProjectFolder(m.project.Path, m.project.Path+".zip")
 				return mainMenuModel{}, nil
 			case 2: // Open Folder
-                PlaySound(Sounds.ConfirmSound)
+				PlaySound(Sounds.ConfirmSound)
 				openCmd := "xdg-open"
 				if runtime.GOOS == "darwin" {
 					openCmd = "open"
@@ -64,11 +64,11 @@ func (m projectSubmenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				_ = exec.Command(openCmd, m.project.Path).Start()
 				return mainMenuModel{}, nil
 			case 3: // Back
-                PlaySound(Sounds.ErrorSound)
+				PlaySound(Sounds.ErrorSound)
 				return mainMenuModel{}, nil
 			}
 		case "esc", "q":
-            PlaySound(Sounds.ErrorSound)
+			PlaySound(Sounds.ErrorSound)
 			return mainMenuModel{}, nil
 		}
 	}

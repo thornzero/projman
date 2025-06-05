@@ -1,4 +1,4 @@
-package main
+package tui
 
 import (
 	"fmt"
@@ -94,7 +94,7 @@ func (m mainMenuModel) View() string {
 	return b.String()
 }
 
-func main() {
+func Tui() {
 	p := tea.NewProgram(mainMenuModel{})
 	if _, err := p.Run(); err != nil {
 		log.Fatal(err)

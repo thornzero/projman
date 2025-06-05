@@ -1,4 +1,4 @@
-package main
+package tui
 
 import (
 	"fmt"
@@ -8,12 +8,12 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/thornzero/projman/pkg/projman"
+	"github.com/thornzero/projman/core"
 )
 
 type projectListModel struct {
-	all       []projman.Project
-	filtered  []projman.Project
+	all       []core.Project
+	filtered  []core.Project
 	searchBar textinput.Model
 	searching bool
 	cursor    int
@@ -21,18 +21,18 @@ type projectListModel struct {
 }
 
 func newProjectListModel() projectListModel {
-	base := projman.GetDefaultBaseDir()
+	base := core.GetDefaultBaseDir()
 	entries, err := os.ReadDir(base)
 	if err != nil {
 		return projectListModel{baseDir: base}
 	}
 
-	all := []projman.Project{}
+	all := []core.Project{}
 	for _, entry := range entries {
 		if !entry.IsDir() || strings.HasPrefix(entry.Name(), ".") {
 			continue
 		}
-		p, err := projman.ReadProjectFile(base, entry.Name())
+		p, err := core.ReadProjectFile(base, entry.Name())
 		if err == nil {
 			all = append(all, p)
 		}
@@ -129,12 +129,12 @@ func (m projectListModel) View() string {
 	return b.String()
 }
 
-func filterProjects(projects []projman.Project, query string) []projman.Project {
+func filterProjects(projects []core.Project, query string) []core.Project {
 	if query == "" {
 		return projects
 	}
 
-	var filtered []projman.Project
+	var filtered []core.Project
 	q := strings.ToUpper(query)
 	for _, p := range projects {
 		if strings.Contains(strings.ToUpper(p.ID), q) {

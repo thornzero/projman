@@ -1,4 +1,4 @@
-package main
+package tui
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/thornzero/projman/pkg/projman"
+	"github.com/thornzero/projman/core"
 )
 
 type toolsModel struct {
@@ -53,7 +53,7 @@ func (m toolsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				csv := m.inputCSV.Value()
 				out := m.outputYAML.Value()
 				if csv != "" && out != "" {
-					err := projman.GenerateTags(csv, out)
+					err := core.GenerateTags(csv, out)
 					if err != nil {
 						m.message = "❌ Failed: " + err.Error()
 					} else {

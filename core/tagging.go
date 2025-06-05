@@ -1,4 +1,4 @@
-package projman
+package core
 
 import (
 	"encoding/csv"
