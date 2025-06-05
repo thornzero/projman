@@ -16,7 +16,7 @@ type TagRow struct {
 }
 
 type TagSpec struct {
-	Format string `yaml:"format"` // e.g. "{category}-{subcat}-{id}"
+	Format string `yaml:"format"`
 	Start  int    `yaml:"start"`
 }
 
@@ -27,14 +27,13 @@ type TagAssignment struct {
 	Name     string `yaml:"name"`
 }
 
-func GenerateTags(csvPath, specPath, outputPath string) error {
-	specData, err := os.ReadFile(specPath)
-	if err != nil {
-		return fmt.Errorf("reading spec: %w", err)
+func GenerateTags(csvPath, outputPath string) error {
+	if EnvTagFormat == "" {
+		return fmt.Errorf("missing tag format in env")
 	}
-	var spec TagSpec
-	if err := yaml.Unmarshal(specData, &spec); err != nil {
-		return fmt.Errorf("parsing spec: %w", err)
+	spec := TagSpec{
+		Format: EnvTagFormat,
+		Start:  EnvTagStart,
 	}
 
 	f, err := os.Open(csvPath)
@@ -54,7 +53,7 @@ func GenerateTags(csvPath, specPath, outputPath string) error {
 
 	for i, row := range records {
 		if i == 0 {
-			continue // skip header
+			continue
 		}
 		if len(row) < 3 {
 			continue
