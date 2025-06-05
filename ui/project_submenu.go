@@ -8,7 +8,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/thornzero/projman/core"
+	"github.com/thornzero/projman/app"
 )
 
 type projectSubmenuModel struct {

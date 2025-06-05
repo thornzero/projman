@@ -1,7 +1,7 @@
 package main
 
 import (
-	tui "github.com/thornzero/projman/projtui"
+	tui "github.com/thornzero/projman/ui"
 )
 
 func main() {

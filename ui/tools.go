@@ -6,7 +6,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/thornzero/projman/core"
+	"github.com/thornzero/projman/app"
 )
 
 type toolsModel struct {
