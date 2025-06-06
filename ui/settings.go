@@ -1,4 +1,4 @@
-package tui
+package ui
 
 import (
 	"fmt"
@@ -19,7 +19,7 @@ var settingsItems = []string{
 
 func newSettingsModel() settingsModel {
 	return settingsModel{
-		toggles: []bool{Sounds.Enabled},
+		toggles: []bool{config.SoundsEnabled},
 	}
 }
 
@@ -44,7 +44,7 @@ func (m settingsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			if m.cursor == 0 {
 				m.toggles[0] = !m.toggles[0]
-				Sounds.Enabled = m.toggles[0]
+				config.SoundsEnabled = m.toggles[0]
 			} else if m.cursor == 1 {
 				return mainMenuModel{}, nil
 			}

@@ -1,4 +1,4 @@
-package tui
+package ui
 
 import (
 	"fmt"
@@ -53,7 +53,7 @@ func (m toolsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				csv := m.inputCSV.Value()
 				out := m.outputYAML.Value()
 				if csv != "" && out != "" {
-					err := core.GenerateTags(csv, out)
+					err := app.GenerateTags(csv, out)
 					if err != nil {
 						m.message = "❌ Failed: " + err.Error()
 					} else {

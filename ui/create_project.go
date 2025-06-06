@@ -1,4 +1,4 @@
-package tui
+package ui
 
 import (
 	"fmt"
@@ -19,7 +19,7 @@ type createProjectModel struct {
 }
 
 func newCreateProjectModel() createProjectModel {
-	base := core.GetDefaultBaseDir()
+	base := app.GetDefaultBaseDir()
 	fields := []string{"Project ID", "Project Name", "Description", "Tags (comma-separated)"}
 	inputs := make([]textinput.Model, len(fields))
 	for i := range inputs {
@@ -53,7 +53,7 @@ func (m createProjectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return mainMenuModel{}, nil
 		case "enter":
 			if m.focus == len(m.inputs)-1 {
-				id := core.ValidateID(m.inputs[0].Value())
+				id := app.ValidateID(m.inputs[0].Value())
 				name := m.inputs[1].Value()
 				desc := m.inputs[2].Value()
 				tags := m.inputs[3].Value()
@@ -63,7 +63,7 @@ func (m createProjectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 
-				core.CreateProject(m.baseDir, core.Params{
+				app.CreateProject(m.baseDir, app.Params{
 					ID:          id,
 					Name:        name,
 					Description: desc,

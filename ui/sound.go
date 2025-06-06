@@ -1,4 +1,4 @@
-package tui
+package ui
 
 import (
 	"fmt"
@@ -6,26 +6,8 @@ import (
 	"runtime"
 )
 
-type SoundConfig struct {
-	Enabled      bool
-	NavUpSound   string
-	NavDownSound string
-	SelectSound  string
-	ErrorSound   string
-	ConfirmSound string
-}
-
-var Sounds = SoundConfig{
-	Enabled:      false,
-	NavUpSound:   "sounds/nav_up.wav",
-	NavDownSound: "sounds/nav_down.wav",
-	SelectSound:  "sounds/select.wav",
-	ErrorSound:   "sounds/error.wav",
-	ConfirmSound: "sounds/confirm.wav",
-}
-
 func PlaySound(path string) {
-	if !Sounds.Enabled {
+	if !config.SoundsEnabled {
 		return
 	}
 

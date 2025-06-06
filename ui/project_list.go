@@ -1,4 +1,4 @@
-package tui
+package ui
 
 import (
 	"fmt"
@@ -8,12 +8,12 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/thornzero/projman/app"
+	app "github.com/thornzero/projman/app"
 )
 
 type projectListModel struct {
-	all       []core.Project
-	filtered  []core.Project
+	all       []app.Project
+	filtered  []app.Project
 	searchBar textinput.Model
 	searching bool
 	cursor    int
@@ -21,18 +21,18 @@ type projectListModel struct {
 }
 
 func newProjectListModel() projectListModel {
-	base := core.GetDefaultBaseDir()
+	base := app.GetDefaultBaseDir()
 	entries, err := os.ReadDir(base)
 	if err != nil {
 		return projectListModel{baseDir: base}
 	}
 
-	all := []core.Project{}
+	all := []app.Project{}
 	for _, entry := range entries {
 		if !entry.IsDir() || strings.HasPrefix(entry.Name(), ".") {
 			continue
 		}
-		p, err := core.ReadProjectFile(base, entry.Name())
+		p, err := app.ReadProjectFile(base, entry.Name())
 		if err == nil {
 			all = append(all, p)
 		}
@@ -86,16 +86,16 @@ func (m projectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "up", "k":
 			if m.cursor > 0 {
 				m.cursor--
-				PlaySound(Sounds.NavUpSound)
+				PlaySound(config.NavUpSound)
 			}
 		case "down", "j":
 			if m.cursor < len(m.filtered)-1 {
 				m.cursor++
-				PlaySound(Sounds.NavDownSound)
+				PlaySound(config.NavDownSound)
 			}
 		case "enter", " ":
 			if len(m.filtered) > 0 {
-				PlaySound(Sounds.SelectSound)
+				PlaySound(config.SelectSound)
 				return newProjectSubmenuModel(m.filtered[m.cursor]), nil
 			}
 		}
@@ -129,12 +129,12 @@ func (m projectListModel) View() string {
 	return b.String()
 }
 
-func filterProjects(projects []core.Project, query string) []core.Project {
+func filterProjects(projects []app.Project, query string) []app.Project {
 	if query == "" {
 		return projects
 	}
 
-	var filtered []core.Project
+	var filtered []app.Project
 	q := strings.ToUpper(query)
 	for _, p := range projects {
 		if strings.Contains(strings.ToUpper(p.ID), q) {

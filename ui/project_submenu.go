@@ -1,4 +1,4 @@
-package tui
+package ui
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 )
 
 type projectSubmenuModel struct {
-	project core.Project
+	project app.Project
 	choice  int
 }
 
@@ -23,7 +23,7 @@ var submenuItems = []string{
 	"Back",
 }
 
-func newProjectSubmenuModel(p core.Project) projectSubmenuModel {
+func newProjectSubmenuModel(p app.Project) projectSubmenuModel {
 	return projectSubmenuModel{project: p}
 }
 
@@ -36,25 +36,25 @@ func (m projectSubmenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "up", "k":
-			PlaySound(Sounds.NavUpSound)
+			PlaySound(config.NavUpSound)
 			if m.choice > 0 {
 				m.choice--
 			}
 		case "down", "j":
-			PlaySound(Sounds.NavDownSound)
+			PlaySound(config.NavDownSound)
 			if m.choice < len(submenuItems)-1 {
 				m.choice++
 			}
 		case "enter":
-			PlaySound(Sounds.SelectSound)
+			PlaySound(config.SelectSound)
 			switch m.choice {
 			case 0: // View Status
 				return viewProjectModel{project: &m.project, done: true}, nil
 			case 1: // Archive
-				_ = core.ZipProjectFolder(m.project.Path, m.project.Path+".zip")
+				_ = app.ZipProjectFolder(m.project.Path, m.project.Path+".zip")
 				return mainMenuModel{}, nil
 			case 2: // Open Folder
-				PlaySound(Sounds.ConfirmSound)
+				PlaySound(config.ConfirmSound)
 				openCmd := "xdg-open"
 				if runtime.GOOS == "darwin" {
 					openCmd = "open"
@@ -64,11 +64,11 @@ func (m projectSubmenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				_ = exec.Command(openCmd, m.project.Path).Start()
 				return mainMenuModel{}, nil
 			case 3: // Back
-				PlaySound(Sounds.ErrorSound)
+				PlaySound(config.ErrorSound)
 				return mainMenuModel{}, nil
 			}
 		case "esc", "q":
-			PlaySound(Sounds.ErrorSound)
+			PlaySound(config.ErrorSound)
 			return mainMenuModel{}, nil
 		}
 	}

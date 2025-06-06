@@ -1,4 +1,4 @@
-package tui
+package ui
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 type viewProjectModel struct {
 	input   textinput.Model
 	baseDir string
-	project *core.Project
+	project *app.Project
 	errMsg  string
 	done    bool
 }
@@ -27,7 +27,7 @@ func newViewProjectModel() viewProjectModel {
 
 	return viewProjectModel{
 		input:   ti,
-		baseDir: core.GetDefaultBaseDir(),
+		baseDir: app.GetDefaultBaseDir(),
 	}
 }
 
@@ -42,13 +42,13 @@ func (m viewProjectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "esc":
 			return mainMenuModel{}, nil
 		case "enter":
-			id := core.ValidateID(m.input.Value())
+			id := app.ValidateID(m.input.Value())
 			if id == "" {
 				m.errMsg = "❌ Invalid ID"
 				return m, nil
 			}
 
-			p, err := core.ReadProjectFile(m.baseDir, id)
+			p, err := app.ReadProjectFile(m.baseDir, id)
 			if err != nil {
 				m.errMsg = fmt.Sprintf("❌ %v", err)
 				return m, nil

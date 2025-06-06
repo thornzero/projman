@@ -1,4 +1,4 @@
-package core
+package app
 
 import (
 	"encoding/csv"
@@ -15,11 +15,6 @@ type TagRow struct {
 	Name     string
 }
 
-type TagSpec struct {
-	Format string `yaml:"format"`
-	Start  int    `yaml:"start"`
-}
-
 type TagAssignment struct {
 	ID       string `yaml:"id"`
 	Category string `yaml:"category"`
@@ -28,12 +23,8 @@ type TagAssignment struct {
 }
 
 func GenerateTags(csvPath, outputPath string) error {
-	if EnvTagFormat == "" {
+	if config.TaggingFormat == "" {
 		return fmt.Errorf("missing tag format in env")
-	}
-	spec := TagSpec{
-		Format: EnvTagFormat,
-		Start:  EnvTagStart,
 	}
 
 	f, err := os.Open(csvPath)
@@ -67,9 +58,9 @@ func GenerateTags(csvPath, outputPath string) error {
 
 		key := r.Category + "-" + r.Subcat
 		counter[key]++
-		id := spec.Start + counter[key] - 1
+		id := config.TaggingStart + counter[key] - 1
 
-		tagID := strings.ReplaceAll(spec.Format, "{category}", r.Category)
+		tagID := strings.ReplaceAll(config.TaggingFormat, "{category}", r.Category)
 		tagID = strings.ReplaceAll(tagID, "{subcat}", r.Subcat)
 		tagID = strings.ReplaceAll(tagID, "{id}", fmt.Sprintf("%02d", id))
 

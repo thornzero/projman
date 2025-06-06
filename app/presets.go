@@ -1,8 +1,10 @@
-package core
+package app
 
 import (
+	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -12,9 +14,28 @@ type Preset struct {
 	Folders []string `yaml:"folders"`
 }
 
-func LoadPreset(dir, name string) (Preset, error) {
+var (
+	presetsDirectory = config.BaseDir + "Config/Presets"
+	presets          = []string{}
+)
+
+func GetAvailablePresets() []string {
+	files, err := os.ReadDir(presetsDirectory)
+	if err != nil {
+		log.Printf("failed to read preset directory: %s", err)
+	}
+	presetFiles := []string{}
+	for _, file := range files {
+		presetFiles = append(presetFiles, strings.Split(file.Name(), ".")[0])
+		if strings.Contains(file.Name(), ".yaml") {
+			presets = append(presets, file.Name())
+		}
+	}
+}
+
+func LoadPreset(name string) (Preset, error) {
 	var p Preset
-	path := filepath.Join(dir, name+".yaml")
+	path := filepath.Join(presetsDirectory, name+".yaml")
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return p, err

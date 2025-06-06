@@ -1,4 +1,4 @@
-package core
+package app
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Core project metadata
+// app project metadata
 type Project struct {
 	ID          string   `yaml:"id"`
 	Name        string   `yaml:"name"`

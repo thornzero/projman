@@ -1,4 +1,4 @@
-package tui
+package ui
 
 import (
 	"fmt"
@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+
+	core "github.com/thornzero/projman/app"
 )
 
 type menuOption int
@@ -29,6 +31,8 @@ var menuItems = []string{
 	"⚙️ Settings",
 	"❌ Quit",
 }
+
+var config = core.LoadConfig()
 
 type mainMenuModel struct {
 	cursor int
